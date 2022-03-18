@@ -1,2 +1,2 @@
 # arduino
-Some C++ codes to arduino
+Some C++ codes for arduino boards
