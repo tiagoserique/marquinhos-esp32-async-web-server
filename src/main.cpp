@@ -25,7 +25,8 @@ AsyncWebServer server(80);
 // kp is [0], kd is [1], ki is [2];
 double k[3] = {0, 0, 0};
 
-int maxSpeed = 0, minSpeed = 0;
+// maxSpeed is [0], minSpeed is [1];
+int speed[2];
 
 
 // Initialize the input fields =================================================
@@ -129,7 +130,7 @@ void setup() {
     });
 
     // Send a GET request to <ESP_IP>/get?<inputParam>=<inputMessage>
-    server.on("/get", HTTP_GET, [] (AsyncWebServerRequest *request) {
+    server.on("/get", HTTP_GET, [](AsyncWebServerRequest *request) {
         StringArray inputMessage;
         StringArray inputParam;
 
@@ -155,19 +156,21 @@ void setup() {
         }
         
         if ( request->hasParam(PARAM_MAX_SPEED) ) {
-            inputMessage.add(request->getParam(PARAM_MAX_SPEED)->value());
+            String value = request->getParam(PARAM_MAX_SPEED)->value();
+            inputMessage.add(value);
             inputParam.add(PARAM_MAX_SPEED);
+            speed[0] = value.toInt();
         }
         
         if ( request->hasParam(PARAM_MIN_SPEED) ) {
-            inputMessage.add(request->getParam(PARAM_MIN_SPEED)->value());
+            String value = request->getParam(PARAM_MAX_SPEED)->value();
+            inputMessage.add(value);
             inputParam.add(PARAM_MIN_SPEED);
+            speed[1] = value.toInt();
         }
         
-        if ( !request->hasParam(PARAM_KP) && 
-            !request->hasParam(PARAM_KD) && 
-            !request->hasParam(PARAM_KI) && 
-            !request->hasParam(PARAM_MAX_SPEED) && 
+        if ( !request->hasParam(PARAM_KP) &&  !request->hasParam(PARAM_KD) && 
+            !request->hasParam(PARAM_KI) && !request->hasParam(PARAM_MAX_SPEED) && 
             !request->hasParam(PARAM_MIN_SPEED)
         ){
             String inputMessage = "No message sent";
@@ -218,4 +221,16 @@ void setup() {
 }
 
 
-void loop(){}
+void loop(){
+    #ifdef MONITOR_FLAG
+        for (int i = 0; i < 3; i++){
+            Serial.print(k[i]);
+            Serial.print(" ");
+        }
+
+        for (int i = 0; i < 2; i++){
+            Serial.print(speed[i]);
+            Serial.print(" ");
+        }
+    #endif
+}
