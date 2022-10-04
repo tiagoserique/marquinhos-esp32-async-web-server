@@ -21,7 +21,6 @@ AsyncWebServer server(80);
 
 // Create DNS server ===========================================================
 
-DNSServer dnsServer;
 String hostname = "marquinhost";
 
 
@@ -31,7 +30,7 @@ String hostname = "marquinhost";
 double k[3] = {0, 0, 0};
 
 // maxSpeed is [0], minSpeed is [1];
-int speed[2];
+int speed[2] = {0, 0};
 
 
 // Initialize the input fields =================================================
@@ -76,6 +75,8 @@ const char index_html[] PROGMEM = R"rawliteral(
 
                 <input type="submit" value="Submit">
             </form>
+
+            <button><a href="/data">DATA JSON</a></button>
         </body>
     </html>
 )rawliteral";
@@ -84,6 +85,11 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 void notFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
+}
+
+
+void teste(WiFiEvent_t event, WiFiEventInfo_t info){
+    Serial.println("Connected to the network");
 }
 
 
@@ -106,7 +112,7 @@ void initWebServer(bool output = false, int max_clients = 1, bool hide_ssid = fa
 
     // Set the AP configuration and start the AP ===============================
     
-    if ( !output ){
+    if ( !output ) {
         WiFi.softAPConfig(ip, gateway, subnet);
         WiFi.softAPsetHostname(hostname.c_str());
         WiFi.softAP(ssid, password, 1, hide_ssid, max_clients);
@@ -148,7 +154,7 @@ void initWebServer(bool output = false, int max_clients = 1, bool hide_ssid = fa
     // Define routes =======================================================
 
     // Send web page with input fields to client
-    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+    server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
         request->send_P(200, "text/html", index_html);
     });
 
@@ -245,11 +251,24 @@ void initWebServer(bool output = false, int max_clients = 1, bool hide_ssid = fa
     });
 
     server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
-        request->send(
-            200, 
-            "text/html", 
-            "testing routes <br><a href=\"/\">Return to Home Page</a>"
-        );
+
+        DynamicJsonDocument doc(1024);
+        doc["kp"] = k[0];
+        doc["kd"] = k[1];
+        doc["ki"] = k[2];
+        doc["max_speed"] = speed[0];
+        doc["min_speed"] = speed[1];
+
+        String output;
+        serializeJson(doc, output);
+
+        request->send(200, "application/json", output);
+
+        // request->send(
+        //     200, 
+        //     "text/html", 
+        //     "testing routes <br><a href=\"/\">Return to Home Page</a>"
+        // );
     });
 
 
@@ -258,13 +277,13 @@ void initWebServer(bool output = false, int max_clients = 1, bool hide_ssid = fa
     server.onNotFound(notFound);
     server.begin();
 
-    if ( !output ){
-        dnsServer.start(53, hostname.c_str(), ip);
+    if ( !output ) {
+        MDNS.begin(hostname.c_str());
     }
     else {
         Serial.print("Starting DNS server... ");
         Serial.print(
-            dnsServer.start(53, hostname.c_str(), ip) ? "Ready" : "Failed!"
+            MDNS.begin(hostname.c_str()) ? "Ready" : "Failed!"
         );
         Serial.println();
         Serial.println("=====================================");

@@ -56,22 +56,4 @@ void setup() {
 
 
 void loop(){
-    dnsServer.processNextRequest();
-    delay(20);
-
-
-    //get calibrated readings along with the line position, refer to the QTR Sensors Arduino Library for more details on line position.
-    // int position = sensor_array.readLine(sensor_values, QTR_EMITTERS_ON, WHITE_LINE); 
-    
-    // // Serial.print(position);
-    // // Serial.println();
-
-    // int error = position - 3500;
-    
-    // for (int i = 0; i < NUM_SENSORS; i++)
-    // {
-    //     Serial.print(sensor_values[i]);
-    //     Serial.print('\t');
-    // }
-    // Serial.println();
 }
