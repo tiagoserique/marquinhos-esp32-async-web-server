@@ -1,14 +1,23 @@
 #include <Arduino.h>
 #include <MarquinhosWebServer.h>
-#include <sensor.h>
+#include <QTRSensors.h>
 
 
 // flags for tests =============================================================
-// #define SENSORS             // comment this line to disable sensors
 #define MONITOR_FLAG true   // set to false to disable serial output
 #define MAX_CLIENTS 4       // max number of clients connected to the server
 #define HIDE_SSID false     // hide the ssid from the wifi list
 
+
+// Curve sensors ============================================================
+
+QTRSensors qtr;
+
+int curve_sensor01 = 18;
+int curve_sensor02 = 21;
+
+const uint8_t SensorCount = 8;
+uint16_t sensorValues[SensorCount];
 
 
 void setup() {
@@ -20,40 +29,60 @@ void setup() {
 
 
     // SENSORS CONFIGURATION ===================================================
-    #ifdef SENSORS
-        #ifdef MONITOR_FLAG
-            Serial.println();
-            Serial.println();
-            Serial.println("Setting sensors...");
-            Serial.println();
-        #endif
-        
+    // configure the sensors
+    qtr.setTypeRC();
+    qtr.setSensorPins((const uint8_t[]){13, 14, 27, 26, 25, 33, 32, 19}, SensorCount);
+    qtr.setEmitterPin(4);
 
-        // pinMode(17, OUTPUT);
-        // digitalWrite(17, HIGH); // Turn on LED to indicate calibration mode
-        for(int i = 0; i < CALIBRATION_ITERATIONS; i++){
-            sensor_array.calibrate(QTR_EMITTERS_ON);   
-        }
-        // digitalWrite(17, LOW); // Turn off LED to indicate end of calibration mode 
+    delay(500);
 
+    // 2.5 ms RC read timeout (default) * 10 reads per calibrate() call
+    // = ~25 ms per calibrate() call.
+    // Call calibrate() 400 times to make calibration take about 10 seconds.
+    for (uint16_t i = 0; i < 400; i++){
+        qtr.calibrate();
+    }
 
-        for (int i = 0; i < NUM_SENSORS; i++){
-            Serial.print(sensor_array.calibratedMinimumOn[i] + "\t");
-            Serial.print('\n');
-        }
-        Serial.println();
+    // print the calibration minimum values measured when emitters were on
+    for (uint8_t i = 0; i < SensorCount; i++){
+        Serial.print(qtr.calibrationOn.minimum[i]);
+        Serial.print(' ');
+    }
+    Serial.println();
 
-        for (int i = 0; i < NUM_SENSORS; i++){
-            Serial.print(sensor_array.calibratedMaximumOn[i] + "\t");
-            Serial.print('\n');
-        }
-        Serial.println();
-        Serial.println();
-    #endif
+    // print the calibration maximum values measured when emitters were on
+    for (uint8_t i = 0; i < SensorCount; i++){
+        Serial.print(qtr.calibrationOn.maximum[i]);
+        Serial.print(' ');
+    }
+    Serial.println();
+    Serial.println();
+
 
     delay(1000);
 }
 
 
 void loop(){
+    // read calibrated sensor values and obtain a measure of the line position
+    // from 0 to 5000 (for a white line, use readLineWhite() instead)
+    uint16_t position = qtr.readLineWhite(sensorValues);
+
+    // print the sensor values as numbers from 0 to 1000, where 0 means maximum
+    // reflectance and 1000 means minimum reflectance, followed by the line
+    // position
+    for (uint8_t i = 0; i < SensorCount; i++){
+        Serial.print(sensorValues[i]);
+        Serial.print('\t');
+    }
+    Serial.println(position);
+
+    int curve_sensor01_value = digitalRead(curve_sensor01);
+    int curve_sensor02_value = digitalRead(curve_sensor02);
+
+    Serial.println(curve_sensor01_value);
+    Serial.println(curve_sensor02_value);
+
+
+    delay(250);
 }
