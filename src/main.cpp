@@ -1,84 +1,14 @@
 #include <Arduino.h>
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#include <ESPAsyncWebServer.h>
+#include <webserver.h>
 #include <sensor.h>
 
 
 // flags to test ===============================================================
 #define AP_FLAG
-#define SENSORS
+// #define SENSORS
 #define MONITOR_FLAG
 #define MAX_CLIENTS 4
 #define HIDE_SSID false
-
-
-// Wifi credentials ============================================================
-const char *ssid = "marquinhos-yapira";
-const char *password = "zeruela01";
-
-
-// Configuration for the AP ====================================================
-IPAddress ip(192,168,168,168);
-IPAddress gateway(192,168,168,254);
-IPAddress subnet(255,255,255,0);
-
-
-// Create server on port 80 ====================================================
-AsyncWebServer server(80);
-
-
-// Variables for constraints control ===========================================
-// kp is [0], kd is [1], ki is [2];
-double k[3] = {0, 0, 0};
-
-// maxSpeed is [0], minSpeed is [1];
-int speed[2];
-
-
-// Initialize the input fields =================================================
-const char *PARAM_KP = "kp";
-const char *PARAM_KD = "kd";
-const char *PARAM_KI = "ki";
-const char *PARAM_MAX_SPEED = "max_speed";
-const char *PARAM_MIN_SPEED = "min_speed";
-
-
-// HTML web page to handle 3 input fields (input1, input2, input3) =============
-const char index_html[] PROGMEM = R"rawliteral(
-    <!DOCTYPE HTML>
-    <html>
-        <head>
-            <title>ESP Input Form</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-        </head>
-        <body>
-            <form action="/get">
-                kp: <input type="text" name="kp">
-                
-                <br>
-                
-                kd: <input type="text" name="kd">
-
-                <br>
-
-                ki: <input type="text" name="ki">
-
-                <br>
-
-                Max Speed: <input type="text" name="max_speed">
-
-                <br>
-
-                Min Speed: <input type="text" name="min_speed">
-
-                <br>
-
-                <input type="submit" value="Submit">
-            </form>
-        </body>
-    </html>
-)rawliteral";
 
 
 void notFound(AsyncWebServerRequest *request) {
@@ -87,8 +17,8 @@ void notFound(AsyncWebServerRequest *request) {
 
 
 void setup() {
-    Serial.begin(115200);
-    delay(10);
+    Serial.begin(9600);
+    delay(100);
 
     // API CONFIGURATION =======================================================
     #ifdef AP_FLAG 
@@ -99,7 +29,9 @@ void setup() {
             Serial.print("SSID: ");
             Serial.print(ssid);
             Serial.print(" | pswd: ");
-            Serial.println(password);
+            Serial.print(password);
+            Serial.print(" | hostname: ");
+            Serial.println(hostname.c_str());
             Serial.println();
         #endif
 
@@ -109,15 +41,26 @@ void setup() {
             Serial.println(
                 WiFi.softAPConfig(ip, gateway, subnet) ? "Ready" : "Failed!"
             );
+
+
+            Serial.print("Setting hostname... ");
+            Serial.println(
+                WiFi.softAPsetHostname(hostname.c_str()) ? "Ready" : "Failed!"
+            );
+
+
             Serial.print("Starting AP... ");
             Serial.println(
                 WiFi.softAP(ssid, password, 1, HIDE_SSID, MAX_CLIENTS) ? "Ready" : "Failed!"
             );
+            
             Serial.println();
         #else
             WiFi.softAPConfig(ip, gateway, subnet);
+            WiFi.softAPsetHostname(hostname.c_str());
             WiFi.softAP(ssid, password, 1, HIDE_SSID, MAX_CLIENTS);
         #endif
+
         
         
         // Print the IP address ====================================================
@@ -225,19 +168,29 @@ void setup() {
         
             
         });
+
+        server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
+            request->send(
+                200, 
+                "text/html", 
+                "testing routes <br><a href=\"/\">Return to Home Page</a>"
+            );
+        });
+
         server.onNotFound(notFound);
         server.begin();
+        Serial.println(dnsServer.start(53, hostname.c_str(), ip) ? "DNS Started" : "DNS Failed!");
     #endif
 
 
     // SENSORS CONFIGURATION ===================================================
-    // #ifdef SENSORS
-        // #ifdef MONITOR_FLAG
+    #ifdef SENSORS
+        #ifdef MONITOR_FLAG
             Serial.println();
             Serial.println();
             Serial.println("Setting sensors...");
             Serial.println();
-        // #endif
+        #endif
         
 
         // pinMode(17, OUTPUT);
@@ -260,38 +213,41 @@ void setup() {
         }
         Serial.println();
         Serial.println();
-    // #endif
+    #endif
 
     delay(1000);
 }
 
 
 void loop(){
-    // #ifdef MONITOR_FLAG
-    //     for (int i = 0; i < 3; i++){
-    //         Serial.print(k[i]);
-    //         Serial.print(" ");
-    //     }
+    dnsServer.processNextRequest();
+    delay(20);
 
-    //     for (int i = 0; i < 2; i++){
-    //         Serial.print(speed[i]);
-    //         Serial.print(" ");
-    //     }
-    // #endif
+    #ifdef MONITOR_FLAG
+        // for (int i = 0; i < 3; i++){
+        //     Serial.print(k[i]);
+        //     Serial.print(" ");
+        // }
+
+        // for (int i = 0; i < 2; i++){
+        //     Serial.print(speed[i]);
+        //     Serial.print(" ");
+        // }
+    #endif
 
     
     //get calibrated readings along with the line position, refer to the QTR Sensors Arduino Library for more details on line position.
-    int position = sensor_array.readLine(sensor_values, QTR_EMITTERS_ON, WHITE_LINE); 
+    // int position = sensor_array.readLine(sensor_values, QTR_EMITTERS_ON, WHITE_LINE); 
     
-    // Serial.print(position);
-    // Serial.println();
+    // // Serial.print(position);
+    // // Serial.println();
 
-    int error = position - 3500;
+    // int error = position - 3500;
     
-    for (int i = 0; i < NUM_SENSORS; i++)
-    {
-        Serial.print(sensor_values[i]);
-        Serial.print('\t');
-    }
-    Serial.println();
+    // for (int i = 0; i < NUM_SENSORS; i++)
+    // {
+    //     Serial.print(sensor_values[i]);
+    //     Serial.print('\t');
+    // }
+    // Serial.println();
 }
