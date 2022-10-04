@@ -15,4 +15,10 @@
 void initWebServer(bool output, int max_clients, bool hide_ssid);
 
 
+// extern variables ============================================================
+
+extern double k[3];
+extern int speed[2];
+
+
 #endif // __M_WEB_SERVER_H__

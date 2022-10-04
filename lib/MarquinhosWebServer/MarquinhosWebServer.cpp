@@ -24,13 +24,14 @@ AsyncWebServer server(80);
 String hostname = "marquinhost";
 
 
-// Variables for constraints control ===========================================
+// Curve sensors ============================================================
 
-// kp is [0], kd is [1], ki is [2];
-double k[3] = {0, 0, 0};
+// variables for values that will be sent to the app
+int curve_sensor01_value;
+int curve_sensor02_value;
 
-// maxSpeed is [0], minSpeed is [1];
-int speed[2] = {0, 0};
+const uint8_t SensorCount = 8;
+uint16_t sensorValues[SensorCount];
 
 
 // Initialize the input fields =================================================
@@ -85,11 +86,6 @@ const char index_html[] PROGMEM = R"rawliteral(
 
 void notFound(AsyncWebServerRequest *request) {
     request->send(404, "text/plain", "Not found");
-}
-
-
-void teste(WiFiEvent_t event, WiFiEventInfo_t info){
-    Serial.println("Connected to the network");
 }
 
 
@@ -253,22 +249,23 @@ void initWebServer(bool output = false, int max_clients = 1, bool hide_ssid = fa
     server.on("/data", HTTP_GET, [](AsyncWebServerRequest *request) {
 
         DynamicJsonDocument doc(1024);
-        doc["kp"] = k[0];
-        doc["kd"] = k[1];
-        doc["ki"] = k[2];
+        doc["curve_01"] = curve_sensor01_value;
+        doc["curve_02"] = curve_sensor01_value;
         doc["max_speed"] = speed[0];
         doc["min_speed"] = speed[1];
+        doc["sensor_0"] = sensorValues[0];
+        doc["sensor_1"] = sensorValues[1];
+        doc["sensor_2"] = sensorValues[2];
+        doc["sensor_3"] = sensorValues[3];
+        doc["sensor_4"] = sensorValues[4];
+        doc["sensor_5"] = sensorValues[5];
+        doc["sensor_6"] = sensorValues[6];
+        doc["sensor_7"] = sensorValues[7];
 
-        String output;
-        serializeJson(doc, output);
+        String jsonOutput;
+        serializeJson(doc, jsonOutput);
 
-        request->send(200, "application/json", output);
-
-        // request->send(
-        //     200, 
-        //     "text/html", 
-        //     "testing routes <br><a href=\"/\">Return to Home Page</a>"
-        // );
+        request->send(200, "application/json", jsonOutput);
     });
 
 

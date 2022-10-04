@@ -9,6 +9,25 @@
 #define HIDE_SSID false     // hide the ssid from the wifi list
 
 
+// Variables for constraints control ===========================================
+
+// kp is [0], kd is [1], ki is [2];
+double k[3] = {
+    0,          // kp
+    0,          // kd
+    0,          // ki
+};
+
+
+// Variables for speed control =================================================
+
+// maxSpeed is [0], minSpeed is [1];
+int speed[2] = {
+    0,          // maxSpeed
+    0,          // minSpeed
+};
+
+
 // Curve sensors ============================================================
 
 QTRSensors qtr;
@@ -16,8 +35,12 @@ QTRSensors qtr;
 int curve_sensor01 = 18;
 int curve_sensor02 = 21;
 
-const uint8_t SensorCount = 8;
-uint16_t sensorValues[SensorCount];
+// variables for values that will be sent to the app
+extern int curve_sensor01_value;
+extern int curve_sensor02_value;
+
+extern const uint8_t SensorCount = 8;
+extern uint16_t sensorValues[SensorCount];
 
 
 void setup() {
@@ -77,8 +100,8 @@ void loop(){
     }
     Serial.println(position);
 
-    int curve_sensor01_value = digitalRead(curve_sensor01);
-    int curve_sensor02_value = digitalRead(curve_sensor02);
+    curve_sensor01_value = digitalRead(curve_sensor01);
+    curve_sensor02_value = digitalRead(curve_sensor02);
 
     Serial.println(curve_sensor01_value);
     Serial.println(curve_sensor02_value);
